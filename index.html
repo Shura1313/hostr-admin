@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<title>Hostr — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0A0F1E;--surface:#111827;--border:#1E2A3A;--gold:#C9A84C;--gold-dim:#8A6F2E;--text:#E8EDF5;--muted:#6B7A90;--green:#2ECC71;--red:#E74C3C;--amber:#F39C12;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  #login{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;width:100%;max-width:400px;text-align:center;}
+  .login-box h1{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);margin-bottom:8px;}
+  .login-box p{color:var(--muted);font-size:14px;margin-bottom:32px;}
+  .login-box input{width:100%;background:#0A0F1E;border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:16px;transition:border-color .2s;}
+  .login-box input:focus{border-color:var(--gold-dim);}
+  .login-box button{width:100%;background:var(--gold);color:#0A0F1E;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;}
+  .login-box button:hover:not(:disabled){background:#D4A843;}
+  .login-box button:disabled{opacity:.6;cursor:not-allowed;}
+  .login-error{color:var(--red);font-size:13px;margin-top:12px;min-height:18px;}
+  #dashboard{display:none;}
+  nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .nav-logo{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.4rem;color:var(--gold);}
+  .nav-right{display:flex;align-items:center;gap:16px;}
+  .nav-right span{color:var(--muted);font-size:13px;}
+  .logout-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+  .logout-btn:hover{border-color:var(--gold-dim);color:var(--text);}
+  main{padding:32px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
+  .stat-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+  .stat-value{font-size:2rem;font-weight:600;color:var(--text);}
+  .stat-value.gold{color:var(--gold);}
+  .stat-value.green{color:var(--green);}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .section-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--text);}
+  .search-input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:220px;transition:border-color .2s;}
+  .search-input:focus{border-color:var(--gold-dim);}
+  .table-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;background:var(--surface);}
+  thead tr{background:#0D1526;}
+  th{padding:12px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;}
+  td{padding:14px 16px;font-size:14px;border-top:1px solid var(--border);}
+  tbody tr{transition:background .15s;}
+  tbody tr:hover td{background:#0D1526;cursor:pointer;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.active{background:rgba(46,204,113,.15);color:var(--green);}
+  .badge.cancelled{background:rgba(231,76,60,.15);color:var(--red);}
+  .badge.payment_failed{background:rgba(243,156,18,.15);color:var(--amber);}
+  .plan-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(201,168,76,.1);color:var(--gold);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;}
+  .modal-header{padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+  .modal-header h2{font-family:'Cormorant Garamond',serif;font-size:1.4rem;}
+  .modal-close{background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:2px 8px;border-radius:4px;}
+  .modal-close:hover{color:var(--text);background:var(--border);}
+  .modal-body{padding:28px;}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+  .info-item label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px;}
+  .info-item span{font-size:14px;color:var(--text);}
+  .conv-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
+  .conv-item{background:#0A0F1E;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;}
+  .conv-lead{font-size:13px;font-weight:500;color:var(--gold);}
+  .conv-msg{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5;}
+  .conv-time{font-size:11px;color:#2a3a50;margin-top:6px;}
+  .empty{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
+  .loading{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-msg{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:8px;padding:16px;color:var(--red);font-size:14px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-box">
+    <h1>Hostr</h1>
+    <p>Admin Dashboard</p>
+    <input type="password" id="pw" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <nav>
+    <div class="nav-logo">Hostr</div>
+    <div class="nav-right">
+      <span id="last-updated"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </nav>
+  <main>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Total Agents</div><div class="stat-value gold" id="stat-total">—</div></div>
+      <div class="stat"><div class="stat-label">Active</div><div class="stat-value green" id="stat-active">—</div></div>
+      <div class="stat"><div class="stat-label">MRR</div><div class="stat-value" id="stat-revenue">—</div></div>
+      <div class="stat"><div class="stat-label">Conversations</div><div class="stat-value" id="stat-convos">—</div></div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">Agents</div>
+      <input class="search-input" id="search" placeholder="Search agents..." oninput="filterAgents()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead>
+        <tbody id="agents-table"><tr><td colspan="5" class="loading"><span class="spinner"></span>Loading agents...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-name">Agent</h2>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://hostr-proxy.vercel.app/api';
+const TOKEN_KEY = 'h_tok';
+const EXPIRY_KEY = 'h_exp';
+const RATE_KEY = 'h_att';
+const RATE_TS = 'h_rts';
+
+const PLAN_NAMES = {
+  'price_1Te8mC6oIQfqCXO373ZXZmGC': 'Starter',
+  'price_1Te8nK6oIQfqCXQ3cp7gbCxZ': 'Pro',
+  'price_1Te8mr6oIQfqCXQ3npuFbJck': 'Nora Pro'
+};
+const PLAN_MRR = { Starter: 650, Pro: 1100, 'Nora Pro': 2200 };
+
+let allAgents = [];
+let sessionToken = null;
+
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function isRateLimited() {
+  const att = parseInt(sessionStorage.getItem(RATE_KEY) || '0');
+  const ts  = parseInt(sessionStorage.getItem(RATE_TS)  || '0');
+  if (att >= 5 && Date.now() - ts < 5 * 60 * 1000) return true;
+  if (Date.now() - ts > 5 * 60 * 1000) sessionStorage.setItem(RATE_KEY, '0');
+  return false;
+}
+function recordAttempt() {
+  sessionStorage.setItem(RATE_KEY, parseInt(sessionStorage.getItem(RATE_KEY)||'0')+1);
+  sessionStorage.setItem(RATE_TS, Date.now());
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const tok = sessionStorage.getItem(TOKEN_KEY);
+  const exp = parseInt(sessionStorage.getItem(EXPIRY_KEY) || '0');
+  if (tok && Date.now() < exp) { sessionToken = tok; showDashboard(); }
+  else document.getElementById('pw').focus();
+});
+
+async function doLogin() {
+  const pw  = document.getElementById('pw').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.textContent = '';
+
+  if (!pw) { err.textContent = 'Please enter your password.'; return; }
+  if (isRateLimited()) { err.textContent = 'Too many attempts. Wait 5 minutes.'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Signing in…';
+
+  try {
+    const res = await fetch(`${API}/admin-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+
+    if (res.ok) {
+      const { token } = await res.json();
+      sessionToken = token;
+      sessionStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(EXPIRY_KEY, Date.now() + 24 * 60 * 60 * 1000);
+      sessionStorage.setItem(RATE_KEY, '0');
+      document.getElementById('pw').value = '';
+      showDashboard();
+    } else {
+      recordAttempt();
+      err.textContent = res.status === 401 ? 'Incorrect password.' : 'Server error — try again.';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  } catch {
+    err.textContent = 'Connection error — check your internet.';
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+function doLogout() {
+  sessionToken = null;
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(EXPIRY_KEY);
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('pw').value = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'Sign in';
+  document.getElementById('login-error').textContent = '';
+}
+
+function showDashboard() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadDashboard();
+}
+
+async function apiCall(action, extra = {}) {
+  const res = await fetch(`${API}/admin-data`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sessionToken, action, ...extra })
+  });
+  if (res.status === 401) { doLogout(); throw new Error('Session expired — please sign in again.'); }
+  if (!res.ok) throw new Error('Server error');
+  return res.json();
+}
+
+async function loadDashboard() {
+  try {
+    const { agents, convCount } = await apiCall('getStats');
+    allAgents = agents || [];
+    const active = allAgents.filter(a => a.status === 'active');
+    const mrr = active.reduce((s, a) => s + (PLAN_MRR[PLAN_NAMES[a.plan]] || 0), 0);
+    document.getElementById('stat-total').textContent   = allAgents.length;
+    document.getElementById('stat-active').textContent  = active.length;
+    document.getElementById('stat-revenue').textContent = `$${mrr.toLocaleString()}`;
+    document.getElementById('stat-convos').textContent  = convCount ?? 0;
+    document.getElementById('last-updated').textContent = `Updated ${new Date().toLocaleTimeString('en-NZ')}`;
+    renderTable(allAgents);
+  } catch (e) {
+    document.getElementById('agents-table').innerHTML =
+      `<tr><td colspan="5"><div class="error-msg">${esc(e.message)}</div></td></tr>`;
+  }
+}
+
+function renderTable(agents) {
+  const tbody = document.getElementById('agents-table');
+  if (!agents.length) { tbody.innerHTML='<tr><td colspan="5" class="empty">No agents yet</td></tr>'; return; }
+  tbody.innerHTML = agents.map(a => {
+    const plan = PLAN_NAMES[a.plan] || a.plan || '—';
+    const date = a.created_at ? new Date(a.created_at).toLocaleDateString('en-NZ') : '—';
+    return `<tr onclick="openAgent('${esc(a.id)}')">
+      <td>${esc(a.name||'—')}</td><td>${esc(a.email||'—')}</td>
+      <td><span class="plan-badge">${esc(plan)}</span></td>
+      <td><span class="badge ${esc(a.status||'')}">${esc(a.status||'—')}</span></td>
+      <td>${date}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAgents() {
+  const q = document.getElementById('search').value.toLowerCase();
+  renderTable(allAgents.filter(a =>
+    (a.name||'').toLowerCase().includes(q)||(a.email||'').toLowerCase().includes(q)
+  ));
+}
+
+async function openAgent(id) {
+  const agent = allAgents.find(a => a.id === id);
+  if (!agent) return;
+  document.getElementById('modal-name').textContent = agent.name || agent.email || 'Agent';
+  document.getElementById('modal-body').innerHTML = '<div class="loading"><span class="spinner"></span>Loading…</div>';
+  document.getElementById('modal').classList.add('open');
+
+  try {
+    const { conversations } = await apiCall('getConversations', { agentId: id });
+    const plan = PLAN_NAMES[agent.plan] || agent.plan || '—';
+    const date = agent.created_at ? new Date(agent.created_at).toLocaleDateString('en-NZ') : '—';
+    const convHTML = conversations?.length
+      ? conversations.map(c => `<div class="conv-item">
+          <div class="conv-lead">${esc(c.lead_phone||c.lead_name||'Unknown lead')}</div>
+          <div class="conv-msg">${esc(c.last_message||'No messages')}</div>
+          <div class="conv-time">${c.created_at?new Date(c.created_at).toLocaleString('en-NZ'):''}</div>
+        </div>`).join('')
+      : '<div class="empty">No conversations yet</div>';
+
+    document.getElementById('modal-body').innerHTML = `
+      <div class="info-grid">
+        <div class="info-item"><label>Email</label><span>${esc(agent.email||'—')}</span></div>
+        <div class="info-item"><label>Plan</label><span><span class="plan-badge">${esc(plan)}</span></span></div>
+        <div class="info-item"><label>Status</label><span><span class="badge ${esc(agent.status||'')}">${esc(agent.status||'—')}</span></span></div>
+        <div class="info-item"><label>Joined</label><span>${date}</span></div>
+        <div class="info-item"><label>Phone</label><span>${esc(agent.phone||'—')}</span></div>
+        <div class="info-item"><label>Twilio Number</label><span>${esc(agent.twilio_number||'Not assigned')}</span></div>
+      </div>
+      <div class="conv-title">Recent Conversations</div>
+      ${convHTML}`;
+  } catch (e) {
+    document.getElementById('modal-body').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if(e.target===document.getElementById('modal'))closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape')closeModal(); });
+</script>
+</body>
+</html>
